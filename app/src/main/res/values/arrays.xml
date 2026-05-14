@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="xposed_scope">
+        <!-- NSMedia - главное приложение мультимедиа, где формируется
+             MusicPlaybackInfoImpl с пустым radioStationName -->
+        <item>com.ecarx.multimedia</item>
+        <!-- На всякий случай добавим виджет и сервис радио -->
+        <item>ecarx.xsf.widget</item>
+        <item>com.ecarx.radio.service</item>
+    </string-array>
+</resources>
