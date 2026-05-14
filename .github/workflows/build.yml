@@ -20,10 +20,11 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
 
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
-        with:
-          gradle-version: 8.0
+      - name: Download Gradle 8.0
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.0-bin.zip
+          unzip -q gradle-8.0-bin.zip
+          echo "$PWD/gradle-8.0/bin" >> $GITHUB_PATH
 
       - name: Build debug APK
         run: gradle assembleDebug --stacktrace
