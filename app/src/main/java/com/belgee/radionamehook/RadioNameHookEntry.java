@@ -170,21 +170,16 @@ public class RadioNameHookEntry implements IXposedHookLoadPackage {
 
     /**
      * Для виджета (NSMediaWidget) - dex scan не работает из-за odex/vdex.
-     * Пробуем известные имена классов виджета напрямую.
+     * Используем ТОЧНОЕ имя класса найденное через анализ vdex файла.
      */
     private void tryKnownWidgetClasses(XC_LoadPackage.LoadPackageParam lpparam) {
-        // Из логов мы знаем что виджет имеет класс MusicPlayInfoHolder (без "back")
-        // с полем mLastUiRadioName. Пытаемся его найти под разными пакетами:
+        // НАЙДЕНО через анализ NSMediaWidget.vdex:
+        //   ecarx.xsf.widget.holder.MusicPlayInfoHolder
+        //   methods: setLastUiRadioName(String), getLastUiRadioName()
+        //   field: mLastUiRadioName, mLastRadioFreq
         String[] possibleNames = {
-            "ecarx.xsf.widget.MusicPlayInfoHolder",
             "ecarx.xsf.widget.holder.MusicPlayInfoHolder",
-            "ecarx.xsf.widget.bean.MusicPlayInfoHolder",
-            "ecarx.xsf.widget.remoteviews.MusicPlayInfoHolder",
-            "ecarx.xsf.widget.data.MusicPlayInfoHolder",
-            "com.ecarx.xsf.widget.MusicPlayInfoHolder",
-            // Также RemoteViews которые рисуют имя
-            "ecarx.xsf.widget.remoteviews.UnfoldRadioWidgetRemoteViews",
-            "ecarx.xsf.widget.remoteviews.RadioWidgetRemoteViews"
+            "ecarx.xsf.widget.remoteviews.UnfoldRadioWidgetRemoteViews"
         };
 
         ClassLoader cl = lpparam.classLoader;
@@ -192,11 +187,67 @@ public class RadioNameHookEntry implements IXposedHookLoadPackage {
             try {
                 Class<?> c = cl.loadClass(name);
                 XposedBridge.log(TAG + ": ✓ widget class found: " + name);
-                // Перехватываем ВСЕ публичные методы класса для диагностики
+                // Хукаем КОНКРЕТНЫЕ методы для надёжности
+                hookWidgetMethods(c, name);
+                // И на всякий случай - универсальный hook на все name методы
                 hookAllStringSettersAndGetters(c, name);
             } catch (Throwable t) {
                 XposedBridge.log(TAG + ": widget class not found: " + name);
             }
+        }
+    }
+
+    /**
+     * Точечный hook на найденные методы виджета.
+     */
+    private void hookWidgetMethods(Class<?> targetClass, final String classNameForLog) {
+        // setLastUiRadioName(String) - устанавливает имя на виджете
+        try {
+            XposedHelpers.findAndHookMethod(targetClass, "setLastUiRadioName", String.class,
+                new XC_MethodHook() {
+                    @Override
+                    protected void beforeHookedMethod(MethodHookParam param) {
+                        String newName = (String) param.args[0];
+                        if (newName == null || newName.isEmpty()) {
+                            String freq = readFreqFromObject(param.thisObject);
+                            String found = StationsDatabase.findName(freq);
+                            if (found != null) {
+                                param.args[0] = found;
+                                XposedBridge.log(TAG + ": >>> WIDGET setLastUiRadioName('') -> '"
+                                    + found + "' (freq=" + freq + ")");
+                            } else {
+                                XposedBridge.log(TAG + ": [WIDGET] setLastUiRadioName('') freq="
+                                    + freq + " not in DB");
+                            }
+                        }
+                    }
+                });
+            XposedBridge.log(TAG + ":   ✓ hooked setLastUiRadioName on " + classNameForLog);
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": setLastUiRadioName hook failed: " + t.getMessage());
+        }
+
+        // getLastUiRadioName() - возвращает имя
+        try {
+            XposedHelpers.findAndHookMethod(targetClass, "getLastUiRadioName",
+                new XC_MethodHook() {
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param) {
+                        String result = (String) param.getResult();
+                        if (result == null || result.isEmpty()) {
+                            String freq = readFreqFromObject(param.thisObject);
+                            String found = StationsDatabase.findName(freq);
+                            if (found != null) {
+                                param.setResult(found);
+                                XposedBridge.log(TAG + ": >>> WIDGET getLastUiRadioName() '' -> '"
+                                    + found + "' (freq=" + freq + ")");
+                            }
+                        }
+                    }
+                });
+            XposedBridge.log(TAG + ":   ✓ hooked getLastUiRadioName on " + classNameForLog);
+        } catch (Throwable t) {
+            // not present - ok
         }
     }
 
