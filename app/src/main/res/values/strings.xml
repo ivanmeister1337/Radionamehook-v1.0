@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Radio Name Hook</string>
+    <string name="active">Hook активен ✓</string>
+    <string name="inactive">Hook не активен ✗</string>
+    <string name="instructions">Для работы:\n1. Открой LSPosed Manager\n2. Включи модуль\n3. Выбери scope: com.ecarx.multimedia\n4. Перезагрузи ГУ\n\nБаза станций: /sdcard/RadioNames/stations.json</string>
+</resources>
