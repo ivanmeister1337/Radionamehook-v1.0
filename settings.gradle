@@ -1,2 +1,3 @@
 rootProject.name = "RadioNameHook"
 include ':app'
+include ':xposed-stub'
