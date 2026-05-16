@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+
+    <application
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar">
+
+        <!-- Объявление что это Xposed модуль -->
+        <meta-data android:name="xposedmodule" android:value="true" />
+        <meta-data android:name="xposeddescription"
+                   android:value="Подмена названий радиостанций в NSMedia для Belgee X50" />
+        <meta-data android:name="xposedminversion" android:value="93" />
+
+        <!-- Какой процесс хукаем (через scope в LSPosed Manager) -->
+        <meta-data android:name="xposedscope"
+                   android:resource="@array/xposed_scope" />
+
+        <!-- Точка входа в модуль -->
+        <meta-data android:name="xposedinit"
+                   android:value="com.belgee.radionamehook.RadioNameHookEntry" />
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
